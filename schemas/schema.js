@@ -147,7 +147,72 @@ const Mutation = new GraphQLObjectType({
                 localStorage.setItem("comments", JSON.stringify(comments));
                 return comment;
             }
-        }
+        },
+        deletePost: {
+            type: PostType,
+            args: {
+                id: { type: GraphQLNonNull(GraphQLID) },
+            },
+            resolve(parent, args){
+                const posts = JSON.parse(localStorage.getItem("posts"));
+                
+                const post = posts.find(post => post.id === args.id );
+               
+                //Delete the post
+                const index = posts.indexOf(post);
+                posts.splice(index, 1);
+
+                localStorage.setItem("posts", JSON.stringify(posts));
+                return post;
+            }
+        },
+        deleteComment: {
+            type: CommentType,
+            args: {
+                id: { type: GraphQLNonNull(GraphQLID) },
+            },
+            resolve(parent, args){
+                const comments = JSON.parse(localStorage.getItem("comments"));
+                
+                const comment = comments.find(comment => {
+                    return comment.id === args.id;
+                });
+               
+                //Delete the comment
+                const index = comments.indexOf(comment);
+                comments.splice(index, 1);
+                
+                localStorage.setItem("comments", JSON.stringify(comments));
+                return comment;
+            }
+        },
+        updatePost: {
+            type: PostType,
+            args: {
+                id: { type: GraphQLNonNull(GraphQLID) },
+                title: { type: GraphQLNonNull(GraphQLString) },
+                link: { type: GraphQLNonNull(GraphQLString) },
+                upvotes: { type: GraphQLNonNull(GraphQLInt) },
+            },
+            resolve(parent, args){
+                const posts = JSON.parse(localStorage.getItem("posts"));
+            
+                const post = posts.find(post => post.id === args.id );
+                //Delete the post
+                const index = posts.indexOf(post);
+
+                let newPost = {
+                    id: args.id,
+                    title: args.title,
+                    link: args.link,
+                    upvotes: args.upvotes,
+                };
+
+                posts.splice(index, 1, newPost);
+                localStorage.setItem("posts", JSON.stringify(posts));
+                return newPost;
+            }
+        }       
     }
 });
 
