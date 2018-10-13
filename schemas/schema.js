@@ -1,4 +1,8 @@
 const graphql = require("graphql");
+const Post = require("../models/post");
+const Comment = require("../models/comment");
+
+
 const { GraphQLObjectType,
         GraphQLID,
         GraphQLString,
@@ -7,18 +11,6 @@ const { GraphQLObjectType,
         GraphQLList,
         GraphQLNonNull,
       } = graphql;
-
-if (typeof localStorage === "undefined" || localStorage === null) {
-    var LocalStorage = require('node-localstorage').LocalStorage;
-    var localStorage = new LocalStorage('./scratch');
-}
-
-if(localStorage.getItem("comments") === null)
-     localStorage.setItem("comments", JSON.stringify([]));
-if(localStorage.getItem("posts") === null)
-     localStorage.setItem("posts", JSON.stringify([]));
-
-
 
 const PostType = new GraphQLObjectType({
     name: "Post",
@@ -30,10 +22,7 @@ const PostType = new GraphQLObjectType({
         comments: {
            type: new GraphQLList(CommentType),
            resolve(parent, args){
-                const comments = JSON.parse(localStorage.getItem("comments"));
-                return comments.filter((comment) => {
-                    return comment.postId === parent.id;
-                });
+                return Comment.find({postId: parent.id});
             }
         }
     })
@@ -49,10 +38,7 @@ const CommentType = new GraphQLObjectType({
         post: {
             type: PostType,
             resolve(parent, args){
-                const posts = JSON.parse(localStorage.getItem("posts"));
-                return posts.find((post) => {
-                    return post.id === parent.postId;
-                });
+               return Post.findById(parent.postId);
             }
         }
     })
@@ -65,36 +51,26 @@ const RootType = new GraphQLObjectType({
             type: PostType,
             args: {id: { type: GraphQLID}},
             resolve(parent, args){
-                //Code to get data here
-                const posts = JSON.parse(localStorage.getItem("posts"));
-                return posts.find((post) => {
-                    return post.id === args.id;
-                });
+                return Post.findById(args.id);
             }
         },
         comment: {
             type: CommentType,
             args: {id: {type: GraphQLID}},
             resolve(parent, args){
-                //Code to get data here
-                const comments = JSON.parse(localStorage.getItem("comments"));
-                return comments.find((comment) => {
-                    return comment.id === args.id;
-                });
+                return Comment.findById(args.id);
             }
         },
         posts: {
             type: new GraphQLList(PostType),
             resolve(parent,args){
-                const posts = JSON.parse(localStorage.getItem("posts"));
-                return posts;
+                return Post.find({});
             }
         },
         comments: {
             type: new GraphQLList(CommentType),
             resolve(parent,args){
-                const comments = JSON.parse(localStorage.getItem("comments"));
-                return comments;
+                return Comment.find({});
             }
         },
     }
@@ -107,45 +83,35 @@ const Mutation = new GraphQLObjectType({
         addPost: {
             type: PostType,
             args: {
-                id: { type: GraphQLNonNull(GraphQLID) },
                 title: { type: GraphQLNonNull(GraphQLString) },
                 link: { type: GraphQLNonNull(GraphQLString) },
                 upvotes: { type: GraphQLNonNull(GraphQLInt) },
             },
             resolve(parent, args){
-                const posts = JSON.parse(localStorage.getItem("posts"));
-                let post = {
-                    id: args.id,
+                let post = new Post({
                     title: args.title,
                     link: args.link,
                     upvotes: args.upvotes,
-                };
-                posts.push(post);
-                localStorage.setItem("posts", JSON.stringify(posts));
-                return post;
+                });
+                return post.save();
             }
         },
         addComment: {
             type: CommentType,
             args: {
-                id: { type: GraphQLNonNull(GraphQLID) },
                 body: { type: GraphQLNonNull(GraphQLString) },
                 author: { type: GraphQLNonNull(GraphQLString) },
                 upvotes: { type: GraphQLNonNull(GraphQLInt) },
                 postId: { type: GraphQLNonNull(GraphQLID) }
             },
             resolve(parent, args){
-                const comments = JSON.parse(localStorage.getItem("comments"));
-                let comment = {
-                    id: args.id,
+                let comment = new Comment({
                     body: args.body,
                     author: args.author,
                     upvotes: args.upvotes,
                     postId: args.postId
-                };
-                comments.push(comment);
-                localStorage.setItem("comments", JSON.stringify(comments));
-                return comment;
+                });
+                return comment.save();
             }
         },
         deletePost: {
@@ -154,15 +120,8 @@ const Mutation = new GraphQLObjectType({
                 id: { type: GraphQLNonNull(GraphQLID) },
             },
             resolve(parent, args){
-                const posts = JSON.parse(localStorage.getItem("posts"));
-                
-                const post = posts.find(post => post.id === args.id );
-               
-                //Delete the post
-                const index = posts.indexOf(post);
-                posts.splice(index, 1);
-
-                localStorage.setItem("posts", JSON.stringify(posts));
+                console.log(args.id);
+                const post = Post.findByIdAndRemove(args.id);
                 return post;
             }
         },
@@ -172,18 +131,8 @@ const Mutation = new GraphQLObjectType({
                 id: { type: GraphQLNonNull(GraphQLID) },
             },
             resolve(parent, args){
-                const comments = JSON.parse(localStorage.getItem("comments"));
-                
-                const comment = comments.find(comment => {
-                    return comment.id === args.id;
-                });
-               
-                //Delete the comment
-                const index = comments.indexOf(comment);
-                comments.splice(index, 1);
-                
-                localStorage.setItem("comments", JSON.stringify(comments));
-                return comment;
+               const comment = Comment.findByIdAndRemove( args.id);
+               return comment;
             }
         },
         updatePost: {
@@ -195,22 +144,14 @@ const Mutation = new GraphQLObjectType({
                 upvotes: { type: GraphQLNonNull(GraphQLInt) },
             },
             resolve(parent, args){
-                const posts = JSON.parse(localStorage.getItem("posts"));
-            
-                const post = posts.find(post => post.id === args.id );
-                //Delete the post
-                const index = posts.indexOf(post);
-
                 let newPost = {
-                    id: args.id,
                     title: args.title,
                     link: args.link,
                     upvotes: args.upvotes,
                 };
 
-                posts.splice(index, 1, newPost);
-                localStorage.setItem("posts", JSON.stringify(posts));
-                return newPost;
+                Post.findByIdAndUpdate(args.id, newPost);
+                return Post.findById(args.id);
             }
         }       
     }
