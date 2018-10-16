@@ -5,7 +5,7 @@ const schema = require("./schemas/schema");
 
 const app = express();
 //Connect to Local MongoDB
-mongoose.connect('mongodb://localhost/graphqlPostList');
+mongoose.connect('mongodb://thanhp:khavydang10@ds233323.mlab.com:33323/graphql-post-list');
 mongoose.connection.once('open',() =>{
     console.log("Connect to Database");
 }); 
