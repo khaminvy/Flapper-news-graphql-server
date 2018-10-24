@@ -4,7 +4,8 @@
   "description": "Grapql server for flapper News",
   "main": "index.js",
   "scripts": {
-    "test": "mocha ./tests/*.js"
+    "test": "mocha ./tests/*.js",
+    "start": "nodemon app.js"
   },
   "author": "Thanh Pham",
   "license": "ISC",
